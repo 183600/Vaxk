@@ -78,7 +78,7 @@ executable Vaxk
 
 test-suite my-project-tests
     type:              exitcode-stdio-1.0
-    main-is:           Main.hs
+    main-is:           app/Main.hs
     other-modules:     
     build-depends:     base ^>=4.14
                     , tasty            -- 添加 tasty
