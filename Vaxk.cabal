@@ -79,10 +79,10 @@ executable Vaxk
 test-suite my-project-tests
     type:              exitcode-stdio-1.0
     main-is:           Main.hs
-    other-modules:     
+    other-modules:
     build-depends:     base ^>=4.14
-                    , tasty            -- 添加 tasty
-                    , tasty-hunit      -- 添加 hunit
-                    , tasty-quickcheck -- 添加 quickcheck (可选)
+                    , tasty
+                    , tasty-hunit
+                    , tasty-quickcheck 
     hs-source-dirs:   test
     default-language: GHC2021
