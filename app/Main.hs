@@ -3,8 +3,8 @@ module Main where
 import Options.Applicative
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
-import qualified Data.HashMap.Strict as HashMap
-import Data.Hashable
+import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as U
 
 -- 1. 定义你的数据类型，表示CLI的参数结构
 data Options = Options
@@ -17,7 +17,7 @@ data Command
   deriving (Show)
 
 data Token
-  = Package { name :: Text}
+  = Package { name :: Maybe Text}
   deriving (Show)
 
 -- 2. 实现具体的业务逻辑
@@ -29,26 +29,30 @@ runApp (Options cmd) = case cmd of
       contents <- TIO.readFile "test.txt"
     -- 2. 将内容按行分割
       let lineList = T.lines contents
-      let myMap = HashMap.fromList[] 
     -- 3. 逐行处理 (例如打印行号和内容)
-      map parseLine $ T.words linelist-- (zip [1..] linelist)
+      -- 方案：遍历每一行，对每一行 words，然后 flatten（压平），最后处理
+      let allWords = map T.words linelist
+      -- allWords 的类型是 [Text]
+      -- 使用 mapM_ 执行 IO
+      mapM_ parser allWords
 
 parseChar :: Char -> ()
 parseChar ' '
 
-parseLinePart :: Text -> (Maybe Token,Text)
-parseLinePart "package" = (Just Package{name=""},"package")
-parseLinePart x = (Nothing,x)
+parseLine :: V.Vector Text Token -> [Text] -> [Text] -> Int -> [Token]
+parseLine _ [] _ _= (Nothing,Text)
+parseLine h ("package":xs) a b = parseLine (V.snoc Package{name=Nothing} h) xs ("package"<>xs) a+1
+parseLine h (x:xs) a b
+  | a[b-1] == "package" =   
 
-parseLine' :: [(Int,Text)] -> [Maybe Token]
-parseLine' [] = (Nothing,Text)
-parseLine' (x:xs)
-  | 
+parser' :: V.Vector Text Token -> [[Text]] -> [Maybe Token]
+parser' _ [] = (Nothing,Text)
+parser' h (x:xs) = parseLine V.fromList[] (x <> parser' xs) (x <> parser' xs) 0
 
-parseLine :: Text -> ()
-parseLine x = () 
+parser :: Text -> ()
+parser x = () 
   where
-    parseLine' $ T.words x
+    parser' V.fromList[] x
 
 -- 解析子命令
 runParser :: Parser Command
