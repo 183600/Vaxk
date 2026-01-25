@@ -18,6 +18,7 @@ data Command
 
 data Token
   = Package { name :: Maybe Text}
+  , Import { name :: Maybe Text}
   deriving (Show)
 
 -- 2. 实现具体的业务逻辑
@@ -41,9 +42,13 @@ parseChar ' '
 
 parseLine :: V.Vector Text Token -> [Text] -> [Text] -> Int -> [Token]
 parseLine _ [] _ _= (Nothing,Text)
-parseLine h ("package":xs) a b = parseLine (V.snoc Package{name=Nothing} h) xs ("package"<>xs) a+1
+parseLine h fullList@("package":xs) a b = parseType Package fullList
+parseLine h fullList@("import":xs) a b = parseType Import fullList
 parseLine h (x:xs) a b
-  | a[b-1] == "package" =   
+  | a[b-1] == "package" = h V.// [(V.length , a !! $ length a)]
+  | a[b-1] == "import" = h V.// [(V.length , a !! $ length a)]
+  where
+    parseType constructor fullList = parseLine (V.snoc h constructor{name=Nothing}) xs fullList a+1
 
 parser' :: V.Vector Text Token -> [[Text]] -> [Maybe Token]
 parser' _ [] = (Nothing,Text)
