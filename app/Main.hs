@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE RecordWildCards #-}
 module Main where
 
 import Options.Applicative
@@ -68,12 +69,13 @@ runApp (Options cmd) = case cmd of
       -- 使用 mapM_ 执行 IO
       mapM_ parser allWords
 
-parseLine :: V.Vector Text SmallPiece -> [Text] -> [Text] -> Int -> [SmallPiece]
-parseLine _ [] _ _= (Nothing,Text)
-parseLine h fullList@("package":xs) a b = parseType Package fullList
-parseLine h fullList@("import":xs) a b = parseType Import fullList
-parseLine h fullList@("func":xs) a b = parseType Func fullList
-parseLine h fullList@(['"']:xs) a b = parseType Func fullList
+-- parseLine :: V.Vector Text SmallPiece -> [Text] -> [Text] -> Int -> [SmallPiece]
+parseLine :: ParseLine -> [SmallPiece]
+parseLine ParseLine{remainingTokens = [],..} = (Nothing,Text)
+parseLine ParseLine{remainingTokens = ("package":_),..} = parseType Package allTokens
+parseLine ParseLine{remainingTokens = ("import":_),..} = parseType Import allTokens
+parseLine ParseLine{remainingTokens = ("func":_),..} = parseType Func allTokens
+parseLine ParseLine{remainingTokens = (['"']:_),..} = parseType Func allTokens
 parseLine h (x:xs) a b
   | a[b-1] == "package" = h V.// [(V.length , Package{name=a !! $ length a})]
   | a[b-2] == "import" = h V.// [(V.length , Import{name=a})]
