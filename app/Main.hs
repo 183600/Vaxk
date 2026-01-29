@@ -69,19 +69,20 @@ runApp (Options cmd) = case cmd of
       -- 使用 mapM_ 执行 IO
       mapM_ parser allWords
 
+parseType :: SmallPiece -> [Text] -> [SmallPiece]
+parseType constructor allTokens = parseLine (V.snoc h constructor) xs allTokens a+1
+
 -- parseLine :: V.Vector Text SmallPiece -> [Text] -> [Text] -> Int -> [SmallPiece]
 parseLine :: ParseLine -> [SmallPiece]
 parseLine ParseLine{remainingTokens = [],..} = (Nothing,Text)
-parseLine ParseLine{remainingTokens = ("package":_),..} = parseType Package allTokens
-parseLine ParseLine{remainingTokens = ("import":_),..} = parseType Import allTokens
-parseLine ParseLine{remainingTokens = ("func":_),..} = parseType Func allTokens
-parseLine ParseLine{remainingTokens = (['"']:_),..} = parseType Func allTokens
+parseLine ParseLine{remainingTokens = ("package":_),..} = parseType Package{name=Nothing} allTokens
+parseLine ParseLine{remainingTokens = ("import":_),..} = parseType Import{name=Nothing} allTokens
+parseLine ParseLine{remainingTokens = ("func":_),..} = parseType Func{name=Nothing} allTokens
+parseLine ParseLine{remainingTokens = (['"']:_),..} = parseType Func{name=Nothing} allTokens
 parseLine h (x:xs) a b
   | a[b-1] == "package" = h V.// [(V.length , Package{name=a !! $ length a})]
   | a[b-2] == "import" = h V.// [(V.length , Import{name=a})]
   | a[b-1] == "func" = h V.// [(V.length , Func{name=x})]
-  where
-    parseType constructor fullList = parseLine (V.snoc h constructor{name=Nothing}) xs fullList a+1
 
 parser' :: V.Vector Text SmallPiece -> [[Text]] -> [Maybe SmallPiece]
 parser' _ [] = (Nothing,Text)
