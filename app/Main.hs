@@ -44,6 +44,7 @@ data SmallPiece
   = Package { name :: Maybe Text}
   , Import { name :: Maybe Text}
   , Func { name :: Maybe Text}
+  , DoubleQuotationMarks { name :: Maybe Text}
   deriving (Show)
 
 data ParseLine{
@@ -51,6 +52,10 @@ data ParseLine{
   remainingTokens :: [Text],
   allTokens :: [Text],
   i :: Int,
+  } deriving (Show)
+
+data ParseLineBools{
+  InsideString :: Bool
   } deriving (Show)
 
 -- 2. 实现具体的业务逻辑
@@ -69,24 +74,25 @@ runApp (Options cmd) = case cmd of
       -- 使用 mapM_ 执行 IO
       mapM_ parser allWords
 
-parseType :: SmallPiece -> [Text] -> [SmallPiece]
-parseType constructor allTokens = parseLine (V.snoc h constructor) xs allTokens a+1
+parseType :: SmallPiece -> ParseLine -> ParseLineBools -> [SmallPiece]
+parseType constructor myParseLine@ParseLine{remainingTokens = (x:xs),..} myBools = parseLine myParseLine{smallPieceVector=V.snoc h constructor , remainingTokens=xs , i=i+1} myBools
 
 -- parseLine :: V.Vector Text SmallPiece -> [Text] -> [Text] -> Int -> [SmallPiece]
-parseLine :: ParseLine -> [SmallPiece]
-parseLine ParseLine{remainingTokens = [],..} = (Nothing,Text)
-parseLine ParseLine{remainingTokens = ("package":_),..} = parseType Package{name=Nothing} allTokens
-parseLine ParseLine{remainingTokens = ("import":_),..} = parseType Import{name=Nothing} allTokens
-parseLine ParseLine{remainingTokens = ("func":_),..} = parseType Func{name=Nothing} allTokens
-parseLine ParseLine{remainingTokens = (['"']:_),..} = parseType Func{name=Nothing} allTokens
-parseLine h (x:xs) a b
-  | a[b-1] == "package" = h V.// [(V.length , Package{name=a !! $ length a})]
-  | a[b-2] == "import" = h V.// [(V.length , Import{name=a})]
-  | a[b-1] == "func" = h V.// [(V.length , Func{name=x})]
+parseLine :: ParseLine -> ParseLineBools -> [SmallPiece]
+parseLine myParseLine@ParseLine{remainingTokens = [],..} myParseLineBools = (Nothing,Text)
+parseLine myParseLine@ParseLine{remainingTokens = ("package":_),..} myBools = parseType Package{name=Nothing} myParseLine myBools
+parseLine myParseLine@ParseLine{remainingTokens = ("import":_),..} myBools = parseType Import{name=Nothing} myParseLine myBools
+parseLine myParseLine@ParseLine{remainingTokens = ("func":_),..} myBools = parseType Func{name=Nothing} myParseLine myBools
+parseLine myParseLine@ParseLine{remainingTokens = (['"']:_),..} myBools = if InsideString myBools then parseType DoubleQuotationMarks{name=Nothing} myParseLine myBools{InsideString =False} else parseType DoubleQuotationMarks{name=Nothing} myParseLine myBools{InsideString =True}--if a[b-2] == "import" then parseType DoubleQuotationMarks{name=Nothing} myParseLine myBools else 
+parseLine myParseLine@ParseLine{remainingTokens = myremainingTokens@(x:xs),..} myBools
+  | myremainingTokens[i-1] == "package" = smallPieceVector V.// [(V.length , Package{name=allTokens !! $ length allTokens})]
+  | myremainingTokens[i-2] == "import" = smallPieceVector V.// [(V.length , Import{name=allTokens})]
+  | myremainingTokens[i-1] == "func" = smallPieceVector V.// [(V.length , Func{name=x})]
+  | otherwise = smallPieceVector V.// [(V.length , DoubleQuotationMarks{name=(smallPieceVector V.! V.length) ++ x})]
 
 parser' :: V.Vector Text SmallPiece -> [[Text]] -> [Maybe SmallPiece]
 parser' _ [] = (Nothing,Text)
-parser' h (x:xs) = parseLine V.fromList[] (x <> parser' xs) (x <> parser' xs) 0
+parser' h (x:xs) = parseLine ParseLine{smallPieceVector=V.fromList[] , remainingTokens=x <> parser' xs , allTokens=x <> parser' xs , i=0} ParseLineBools{InsideString =False}
 
 parser :: Text -> ()
 parser x = () 
